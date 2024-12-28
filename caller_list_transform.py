@@ -157,7 +157,6 @@ if __name__ == "__main__":
    argParser.add_argument("input", type=str, help="input filename with path")
 
    args = argParser.parse_args()
-   # print(f'\n\t{args.input= } {args.auth_path= }\n\t{args.dont_email= } {args.parse_only= }')
 
    if args.input is None:
       sys.exit("No file selected to parse.")
@@ -171,8 +170,8 @@ if __name__ == "__main__":
       print(f"Failure: {Caller_lists.message}")
       sys.exit(1)
 
-   date_str = get_fridays_date_string()
+   print(f"Callers with no guests: {Caller_lists.no_guest_list}")
 
+   date_str = get_fridays_date_string()
    make_caller_pdfs(Caller_lists.caller_mapping_dict, Caller_lists.guest_dict, date_str, out_pdf_dir="/tmp")
    
-   # print(f"Callers with no guests: {Caller_lists.no_guest_list}")
