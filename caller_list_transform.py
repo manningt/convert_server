@@ -108,35 +108,40 @@ def make_caller_pdfs(caller_mapping_dict, guest_dict, date_str, out_pdf_dir='.')
    # PDF writing examples:
    #  https://medium.com/@mahijain9211/creating-a-python-class-for-generating-pdf-tables-from-a-pandas-dataframe-using-fpdf2-c0eb4b88355c
    #  https://py-pdf.github.io/fpdf2/Tutorial.html
+   success_list = []
+   failure_list = []
    for caller, guests in caller_mapping_dict.items():
-      pdf = FPDF(orientation="L", format="letter") # default units are mm; adding , unit="in" inserts blank pages
-      pdf.add_page()
-      pdf.set_font("Helvetica", size=14)
-      pdf.cell(0, 10, f"{caller} - Friday, {date_str}", align="C")
-      pdf.ln(10)
+      try:
+         pdf = FPDF(orientation="L", format="letter") # default units are mm; adding , unit="in" inserts blank pages
+         pdf.add_page()
+         pdf.set_font("Helvetica", size=14)
+         pdf.cell(0, 10, f"{caller} - Friday, {date_str}", align="C")
+         pdf.ln(10)
 
-      with pdf.table(col_widths=(11,13,14,13,13,14,14,30), line_height=6) as table:
-         pdf.set_font(size=12)
-         header = ['First', 'Last', 'UserName', 'Password', 'Town', 'Phone', 'Caller notes', 'Notes about guest']
-         row = table.row()
-         for column in header:
-            row.cell(column)
-
-         for guest_id_note in guests:
-            this_guest = guest_dict[guest_id_note[0]]
-            this_weeks_guest_note = guest_id_note[1]
-            if this_weeks_guest_note is None:
-               this_weeks_guest_note = ''
-            row_data = [this_guest['First'], this_guest['Last'], guest_id_note[0], \
-                        this_guest['PW'], this_guest['Town'], this_guest['Phone'], \
-                        this_weeks_guest_note, this_guest['Notes']]
+         with pdf.table(col_widths=(11,13,14,13,13,14,14,30), line_height=6) as table:
+            pdf.set_font(size=12)
+            header = ['First', 'Last', 'UserName', 'Password', 'Town', 'Phone', 'Caller notes', 'Notes about guest']
             row = table.row()
-            for item in row_data:
-               row.cell(str(item), v_align="T")
+            for column in header:
+               row.cell(column)
 
-      pdf.output(os.path.join(out_pdf_dir, f"{caller}_{date_str}.pdf"))
-      # break
+            for guest_id_note in guests:
+               this_guest = guest_dict[guest_id_note[0]]
+               this_weeks_guest_note = guest_id_note[1]
+               if this_weeks_guest_note is None:
+                  this_weeks_guest_note = ''
+               row_data = [this_guest['First'], this_guest['Last'], guest_id_note[0], \
+                           this_guest['PW'], this_guest['Town'], this_guest['Phone'], \
+                           this_weeks_guest_note, this_guest['Notes']]
+               row = table.row()
+               for item in row_data:
+                  row.cell(str(item), v_align="T")
 
+         pdf.output(os.path.join(out_pdf_dir, f"{caller}_{date_str}.pdf"))
+         success_list.append(caller)
+      except: # Exception as e:
+         failure_list.append(caller)
+   return (success_list, failure_list)
 
 def get_fridays_date_string():
    import datetime
