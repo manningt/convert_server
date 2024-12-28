@@ -14,22 +14,30 @@ def run_script(input_file):
 
     Caller_lists = make_guests_per_caller_lists(input_file)
 
+    processing_report_file = os.path.join(current_app.config['UPLOAD_FOLDER'], 'excel_processing_report.txt')
+    status_str = ''
     if not Caller_lists.success:
         current_app.logger.warning(f"Failure: {Caller_lists.message}")
-        failure_message_file = os.path.join(current_app.config['UPLOAD_FOLDER'], 'failure_message.txt')
-        with open(failure_message_file, 'w') as f:
-            f.write(f"Failure: {Caller_lists.message}")
-        return failure_message_file
+        status_str = f"Failure: {Caller_lists.message}"
     else:
-        callers_without_guests_file = os.path.join(current_app.config['UPLOAD_FOLDER'], 'callers_without_guests.txt')
+        # date_str = get_fridays_date_string()
+        success_list, failure_list = make_caller_pdfs(Caller_lists.caller_mapping_dict, Caller_lists.guest_dict, \
+                        get_fridays_date_string(), out_pdf_dir=current_app.config['UPLOAD_FOLDER'])
+
         if len(Caller_lists.no_guest_list) > 0:
-            status_str = f"Callers with no guests: {Caller_lists.no_guest_list}"
+            status_str = "Callers with no guests: " + ', '.join(Caller_lists.no_guest_list) + "\n"
         else:
-            status_str = "All callers have guests."
-        with open(callers_without_guests_file, 'w') as f:
-            f.write(status_str)
+            status_str = "All callers have guests.\n"
+        if "Do-Not-Call" in Caller_lists.caller_mapping_dict:
+            current_app.logger.info(f"Caller_lists.caller_mapping_dict['Do-Not-Call']= {Caller_lists.caller_mapping_dict['Do-Not-Call']}")
+            # status_str += "Guests on the Do-Not-Call list: \n" #+ Caller_lists.caller_mapping_dict["Do-Not-Call"] + "\n"
+        else:
+            status_str += "No callers on Do-Not-Call list.\n"
+        if len(success_list) > 0:
+            status_str += "PDFs generated for: " + ', '.join(success_list) + "\n"
+        if len(failure_list) > 0:
+            status_str += "PDF generation failed for: " + ', '.join(failure_list)
 
-        date_str = get_fridays_date_string()
-        make_caller_pdfs(Caller_lists.caller_mapping_dict, Caller_lists.guest_dict, date_str, out_pdf_dir=current_app.config['UPLOAD_FOLDER'])
-
-    return callers_without_guests_file
+    with open(processing_report_file, 'w') as f:
+        f.write(status_str)
+    return processing_report_file
