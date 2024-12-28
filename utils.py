@@ -29,10 +29,14 @@ def run_script(input_file):
         else:
             status_str = "All callers have guests.\n"
         if "Do-Not-Call" in Caller_lists.caller_mapping_dict:
-            current_app.logger.info(f"Caller_lists.caller_mapping_dict['Do-Not-Call']= {Caller_lists.caller_mapping_dict['Do-Not-Call']}")
-            # status_str += "Guests on the Do-Not-Call list: \n" #+ Caller_lists.caller_mapping_dict["Do-Not-Call"] + "\n"
-        else:
-            status_str += "No callers on Do-Not-Call list.\n"
+            # current_app.logger.info(f"Caller_lists.caller_mapping_dict['Do-Not-Call']= {Caller_lists.caller_mapping_dict['Do-Not-Call']}")
+            # example:  Caller_lists.caller_mapping_dict['Do-Not-Call']= [['Guest6', None]]
+            status_str += "Guests on the Do-Not-Call list: "
+            for guest in Caller_lists.caller_mapping_dict["Do-Not-Call"]:
+                status_str += f"{guest[0]} " # guest[0] is the guest UserName and guest[1] is the Caller's note
+            status_str += "\n"
+        # else:
+        #     status_str += "No guests on Do-Not-Call list.\n"
         if len(success_list) > 0:
             status_str += "PDFs generated for: " + ', '.join(success_list) + "\n"
         if len(failure_list) > 0:
