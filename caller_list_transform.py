@@ -137,24 +137,11 @@ def make_caller_pdfs(caller_mapping_dict, guest_dict, date_str, out_pdf_dir='.')
                for item in row_data:
                   row.cell(str(item), v_align="T")
 
-         pdf.output(os.path.join(out_pdf_dir, f"{caller}_{date_str}.pdf"))
+         pdf.output(os.path.join(out_pdf_dir, f"{date_str}_{caller}.pdf"))
          success_list.append(caller)
       except: # Exception as e:
          failure_list.append(caller)
    return (success_list, failure_list)
-
-def get_fridays_date_string():
-   import datetime
-   today = datetime.date.today()
-   # print(f"{today.weekday()=}")
-   # Sunday is 6, Monday is 0, Tuesday is 1, Wednesday is 2, Thursday is 3, Friday is 4, Saturday is 5
-   # find the next Friday
-   days_ahead = 4 - today.weekday()
-   if days_ahead <= 0: # Target day already happened this week
-      days_ahead += 7
-   # print(f"{days_ahead=}")
-   target_date = today + datetime.timedelta(days=days_ahead)
-   return target_date.strftime('%Y_%m_%d')
 
 
 if __name__ == "__main__":
