@@ -4,36 +4,44 @@ calls functions to process the input excel file and generate a
 import os
 from flask import current_app
 import zipfile
+from caller_list_transform import make_guests_per_caller_lists, make_caller_pdfs, Caller_lists
 
-# import sys
-# sys.path.append(os.path.join(os.path.dirname(__file__), "pantry_calls/make_lists"))
-from caller_list_transform import make_guests_per_caller_lists, make_caller_pdfs, Caller_lists, get_fridays_date_string
+def get_fridays_date_string():
+   import datetime
+   today = datetime.date.today()
+   # print(f"{today.weekday()=}")
+   # Sunday is 6, Monday is 0, Tuesday is 1, Wednesday is 2, Thursday is 3, Friday is 4, Saturday is 5
+   # find the next Friday
+   days_ahead = 4 - today.weekday()
+   if days_ahead <= 0: # Target day already happened this week
+      days_ahead += 7
+   # print(f"{days_ahead=}")
+   target_date = today + datetime.timedelta(days=days_ahead)
+   return target_date.strftime('%Y-%m-%d')
 
-import contextlib
-@contextlib.contextmanager
-# https://stackoverflow.com/questions/431684/how-do-i-cd-in-python
-def pushd(new_dir):
-    previous_dir = os.getcwd()
-    os.chdir(new_dir)
-    try:
-        yield
-    finally:
-        os.chdir(previous_dir)
 
 def run_script(input_file):
     # current_app.logger.info(f"input_file= {input_file}")
 
+    pantry_date_str = get_fridays_date_string()
     Caller_lists = make_guests_per_caller_lists(input_file)
 
-    processing_report_file = os.path.join(current_app.config['UPLOAD_FOLDER'], 'excel_processing_report.txt')
+    processing_report_filename = 'excel_processing_report.txt'
+    processing_report_filepath = os.path.join(current_app.config['UPLOAD_FOLDER'], f'{pantry_date_str}_{processing_report_filename}')
+    zip_filename = 'call_lists.zip'
+    zip_filepath = os.path.join(current_app.config['UPLOAD_FOLDER'], f'{pantry_date_str}_{zip_filename}')
     status_str = ''
     if not Caller_lists.success:
         current_app.logger.warning(f"Failure: {Caller_lists.message}")
         status_str = f"Failure: {Caller_lists.message}"
     else:
-        # date_str = get_fridays_date_string()
+        # remove any existing files in the upload folder
+        for item in os.listdir(current_app.config['UPLOAD_FOLDER']):
+            if item.endswith(".pdf") or item.endswith(".txt"):
+                os.remove(os.path.join(current_app.config['UPLOAD_FOLDER'], item))
+    
         success_list, failure_list = make_caller_pdfs(Caller_lists.caller_mapping_dict, Caller_lists.guest_dict, \
-                        get_fridays_date_string(), out_pdf_dir=current_app.config['UPLOAD_FOLDER'])
+                        pantry_date_str, out_pdf_dir=current_app.config['UPLOAD_FOLDER'])
 
         if len(Caller_lists.no_guest_list) > 0:
             status_str = "Callers with no guests: " + ', '.join(Caller_lists.no_guest_list) + "\n"
@@ -53,39 +61,14 @@ def run_script(input_file):
         if len(failure_list) > 0:
             status_str += "PDF generation failed for: " + ', '.join(failure_list)
 
-    with open(processing_report_file, 'w') as f:
+    with open(processing_report_filepath, 'w') as f:
         f.write(status_str)
 
-    for item in os.listdir(current_app.config['UPLOAD_FOLDER']):
-        if item.endswith(".pdf"):
-            current_app.logger.warning(f"will add {item}")
-        if item.endswith(".txt"):
-            current_app.logger.warning(f"will add {item}")
+    with zipfile.ZipFile(zip_filepath, 'w') as zipf:
+        for item in os.listdir(current_app.config['UPLOAD_FOLDER']):
+            if item.endswith(".pdf"):
+                zipf.write(os.path.join(current_app.config['UPLOAD_FOLDER'], item), item)
+            if item.endswith(".txt"):
+                zipf.write(os.path.join(current_app.config['UPLOAD_FOLDER'], item), item)
 
-    return processing_report_file
-
-
-'''
-    with pushd(current_app.config['UPLOAD_FOLDER']):
-        current_app.logger.warning(f"In {os.getcwd()}")
-        with zipfile.ZipFile("call_lists", 'w') as zipf:
-            for foldername, subfolders, filenames in os.walk("."):
-                for filename in filenames:
-                    if filename.endswith('.pdf') or filename.endswith('.txt'):
-                        zipf.write(filename)
-
-'''
-
-
-def make_archive(source_dir, output_filename):
-    with zipfile.ZipFile(output_filename, 'w') as zipf:
-        for foldername, subfolders, filenames in os.walk(source_dir):
-            for filename in filenames:
-                if filename.endswith('.pdf') or filename.endswith('.txt'):
-                    file_path = os.path.join(foldername, filename)
-                    zipf.write(file_path, os.path.relpath(file_path, source_dir))
-
-# Example usage
-# source_directory = '/path/to/source_directory'
-# output_zipfile = '/path/to/output.zip'
-# make_archive(source_directory, output_zipfile)
+    return zip_filepath
