@@ -3,11 +3,22 @@ calls functions to process the input excel file and generate a
 '''
 import os
 from flask import current_app
+import zipfile
 
-# import os, sys
+# import sys
 # sys.path.append(os.path.join(os.path.dirname(__file__), "pantry_calls/make_lists"))
 from caller_list_transform import make_guests_per_caller_lists, make_caller_pdfs, Caller_lists, get_fridays_date_string
 
+import contextlib
+@contextlib.contextmanager
+# https://stackoverflow.com/questions/431684/how-do-i-cd-in-python
+def pushd(new_dir):
+    previous_dir = os.getcwd()
+    os.chdir(new_dir)
+    try:
+        yield
+    finally:
+        os.chdir(previous_dir)
 
 def run_script(input_file):
     # current_app.logger.info(f"input_file= {input_file}")
@@ -44,4 +55,37 @@ def run_script(input_file):
 
     with open(processing_report_file, 'w') as f:
         f.write(status_str)
+
+    for item in os.listdir(current_app.config['UPLOAD_FOLDER']):
+        if item.endswith(".pdf"):
+            current_app.logger.warning(f"will add {item}")
+        if item.endswith(".txt"):
+            current_app.logger.warning(f"will add {item}")
+
     return processing_report_file
+
+
+'''
+    with pushd(current_app.config['UPLOAD_FOLDER']):
+        current_app.logger.warning(f"In {os.getcwd()}")
+        with zipfile.ZipFile("call_lists", 'w') as zipf:
+            for foldername, subfolders, filenames in os.walk("."):
+                for filename in filenames:
+                    if filename.endswith('.pdf') or filename.endswith('.txt'):
+                        zipf.write(filename)
+
+'''
+
+
+def make_archive(source_dir, output_filename):
+    with zipfile.ZipFile(output_filename, 'w') as zipf:
+        for foldername, subfolders, filenames in os.walk(source_dir):
+            for filename in filenames:
+                if filename.endswith('.pdf') or filename.endswith('.txt'):
+                    file_path = os.path.join(foldername, filename)
+                    zipf.write(file_path, os.path.relpath(file_path, source_dir))
+
+# Example usage
+# source_directory = '/path/to/source_directory'
+# output_zipfile = '/path/to/output.zip'
+# make_archive(source_directory, output_zipfile)
