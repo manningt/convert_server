@@ -21,6 +21,7 @@ except Exception as e:
 
 import argparse
 from pathlib import Path
+from flask import current_app
 
 from typing import NamedTuple  #not to be confused with namedtuple in collections
 class Caller_lists(NamedTuple):
@@ -139,7 +140,8 @@ def make_caller_pdfs(caller_mapping_dict, guest_dict, date_str, out_pdf_dir='.')
 
          pdf.output(os.path.join(out_pdf_dir, f"{date_str}_{caller}.pdf"))
          success_list.append(caller)
-      except: # Exception as e:
+      except Exception as e:
+         current_app.logger.warning(f"PDF for {caller} failed: {e}")
          failure_list.append(caller)
    return (success_list, failure_list)
 
