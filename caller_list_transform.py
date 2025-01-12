@@ -75,7 +75,7 @@ def make_guests_per_caller_lists(in_filename):
    
    is_header = True
    for row in workbook['guest-to-caller'].rows:
-      # columns: 0=Guest, 1=Caller, 3=Note
+      # columns: 0=Guest, 1=Caller, 2=Change, 3=Note, 4=Normal Caller
       if is_header:
          is_header = False
       elif row[1].value is not None:
@@ -84,8 +84,7 @@ def make_guests_per_caller_lists(in_filename):
          caller_note = ""
          if row[3].value is not None and isinstance(row[3].value, str):
             caller_note = row[3].value.replace("’", "'")
-            # caller_note = cleaned_values[index].replace("“",'"')
-         mapping_dict[row[1].value].append([row[0].value, caller_note])
+         mapping_dict[row[1].value].append({'guest':row[0].value, 'caller_note':caller_note, 'change':row[2].value, 'normal_caller':row[4].value})
    # print(f"{mapping_dict=}\n")
    '''
    mapping_dict={'Caroline': [['Guest1', 'new regular']], 'Tina': [], 'Peter': [], 'Rebecca': [['Guest2', 'Substitute this week only']], 'Maria': [], 'Barb': [], 'Lisa': [['Guest3', None]], 'Do-Not-Call': []}
@@ -142,6 +141,7 @@ def make_caller_pdfs(caller_mapping_dict, guest_dict, date_str, out_pdf_dir='.')
    #  https://py-pdf.github.io/fpdf2/Tutorial.html
    success_list = []
    failure_list = []
+   print_count = 0
    for caller, guests in caller_mapping_dict.items():
       # print(f'{caller=} {guests=}')
       try:
@@ -158,18 +158,20 @@ def make_caller_pdfs(caller_mapping_dict, guest_dict, date_str, out_pdf_dir='.')
             for column in header:
                row.cell(column)
 
-            for guest_id_note in guests:
-               # print(f'{guest_id_note=}')
-               this_guest_username = guest_id_note[0]
+            for caller_guest_dict in guests:
+               if print_count > 0:
+                  print(f'{caller_guest_dict=}')
+                  print_count -= 1
+               this_guest_username = caller_guest_dict['guest']
                if this_guest_username in guest_dict:
                   this_guest_dict = guest_dict[this_guest_username]
                else:
                   # print(f'{this_guest_username=} is not in guest_dict')
                   continue
-               this_weeks_guest_note = guest_id_note[1]
+               this_weeks_guest_note = caller_guest_dict['caller_note']
                if this_weeks_guest_note is None:
                   this_weeks_guest_note = ''
-               row_data = [this_guest_dict['First'], this_guest_dict['Last'], guest_id_note[0], \
+               row_data = [this_guest_dict['First'], this_guest_dict['Last'], this_guest_username, \
                            this_guest_dict['PW'], this_guest_dict['Town'], this_guest_dict['Phone'], \
                            this_weeks_guest_note, this_guest_dict['Notes']]
                # print(f"{row_data=}")
@@ -185,7 +187,7 @@ def make_caller_pdfs(caller_mapping_dict, guest_dict, date_str, out_pdf_dir='.')
          except:
             print(f"PDF for {caller} failed: {e}")
          failure_list.append(caller)
-         # sys.exit(1)
+         sys.exit(1)  # stop on first failure
    return (success_list, failure_list)
 
 
