@@ -31,7 +31,7 @@ def run_script(input_file):
                         pantry_date_str, out_pdf_dir=current_app.config['UPLOAD_FOLDER'])
 
         if len(Caller_lists.no_guest_list) > 0:
-            status_str = "Callers with no guests: " + ', '.join(Caller_lists.no_guest_list) + "\n"
+            status_str = "Callers with no guests: " + ', '.join(Caller_lists.no_guest_list) + "\n\n"
         else:
             status_str = "All callers have guests.\n"
         if "Do-Not-Call" in Caller_lists.caller_mapping_dict:
@@ -40,11 +40,13 @@ def run_script(input_file):
             status_str += "Guests on the Do-Not-Call list: "
             for guest in Caller_lists.caller_mapping_dict["Do-Not-Call"]:
                 status_str += f"{guest[0]} " # guest[0] is the guest UserName and guest[1] is the Caller's note
-            status_str += "\n"
+            status_str += "\n\n"
         # else:
         #     status_str += "No guests on Do-Not-Call list.\n"
+        if len(Caller_lists.invalid_usernames) > 0:
+            status_str += "Guests with invalid usernames: " + ', '.join(Caller_lists.invalid_usernames) + "\n\n"
         if len(success_list) > 0:
-            status_str += "PDFs generated for: " + ', '.join(success_list) + "\n"
+            status_str += "PDFs generated for: " + ', '.join(success_list) + "\n\n"
         if len(failure_list) > 0:
             status_str += "PDF generation failed for: " + ', '.join(failure_list)
 
