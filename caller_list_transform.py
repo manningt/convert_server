@@ -31,8 +31,17 @@ class Caller_lists(NamedTuple):
     no_guest_list: list = []
     guest_dict: dict = {}
 
+
 def make_guests_per_caller_lists(in_filename):
    # returns the tuple Caller_lists
+   GUESTS_SHEET_NAME = 'Master List'
+   GUEST_FIRSTNAME = 1
+   GUEST_LASTNAME = 2
+   GUEST_USERNAME = 3
+   GUEST_PASSWORD = 4
+   GUEST_TOWN = 8
+   GUEST_PHONE = 9
+   GUEST_NOTES = 10
 
    Caller_lists()
    Caller_lists.success = False # default value didn't seem to work
@@ -46,9 +55,11 @@ def make_guests_per_caller_lists(in_filename):
    sheetnames = workbook.sheetnames
    # print(f"{workbook.sheetnames=}")
 
-   EXPECTED_SHEETNAMES = ['guest-to-caller', 'callers', 'guests']
-   if sheetnames != EXPECTED_SHEETNAMES:
-      Caller_lists.message = f"Error: expected '{EXPECTED_SHEETNAMES}' sheet names; found '{workbook.sheetnames}' in file '{in_filename}'"
+   # check that expected sheets are in the excel spreadsheet (other sheets are ignored)
+   EXPECTED_SHEETNAMES = {'guest-to-caller', 'callers', GUESTS_SHEET_NAME}
+   sheetnames_set = set(sheetnames)
+   if EXPECTED_SHEETNAMES != sheetnames_set.intersection(EXPECTED_SHEETNAMES):
+      Caller_lists.message = f"Error: expected '{EXPECTED_SHEETNAMES}' sheet names; found '{sheetnames_set}' in file '{in_filename}'"
       return Caller_lists
 
    #make dictionary of caller, [guests]
@@ -63,13 +74,17 @@ def make_guests_per_caller_lists(in_filename):
    
    is_header = True
    for row in workbook['guest-to-caller'].rows:
-      # columns: 0=Guest, 1=Caller, 2=Note
+      # columns: 0=Guest, 1=Caller, 3=Note
       if is_header:
          is_header = False
-      else:
-         # a list containing the guest name and note to the caller's list:
-         mapping_dict[row[1].value].append([row[0].value, row[2].value])
+      elif row[1].value is not None:
          # print(f'{row[0].value} -> {row[1].value}')
+         # a list containing the guest name and note to the caller's list:
+         caller_note = ""
+         if row[3].value is not None and isinstance(row[3].value, str):
+            caller_note = row[3].value.replace("’", "'")
+            # caller_note = cleaned_values[index].replace("“",'"')
+         mapping_dict[row[1].value].append([row[0].value, caller_note])
    # print(f"{mapping_dict=}\n")
    '''
    mapping_dict={'Caroline': [['Guest1', 'new regular']], 'Tina': [], 'Peter': [], 'Rebecca': [['Guest2', 'Substitute this week only']], 'Maria': [], 'Barb': [], 'Lisa': [['Guest3', None]], 'Do-Not-Call': []}
@@ -85,13 +100,25 @@ def make_guests_per_caller_lists(in_filename):
    # make a dictionary of guest data to be used for generating reports.
    guest_dict = {}
    is_header = True
-   for row in workbook['guests'].rows:
-      # columns: 0=First, 1=Last, 2=UserName, 3=Password, 4=Town, 5=Phone, 6=Notes
+   for row in workbook[GUESTS_SHEET_NAME].rows:
       if is_header:
          is_header = False
       else:
-         guest_dict[row[2].value]= {'First':row[0].value, 'Last':row[1].value, 'PW':row[3].value,
-                                 'Town':row[4].value, 'Phone':row[5].value, 'Notes':row[6].value}      
+         # remove characters above the font range, e.g. "’", "“"
+         cleaned_values = [""] * (GUEST_NOTES+1)
+         for index in [GUEST_USERNAME, GUEST_FIRSTNAME, GUEST_LASTNAME, GUEST_PASSWORD, GUEST_TOWN, GUEST_PHONE, GUEST_NOTES]:
+            # if row[index].value is not None and isinstance(row[index].value, str): # and not isinstance(row[index].value, float):
+            if row[index].value is not None and not isinstance(row[index].value, float):
+               cleaned_values[index] = row[index].value.replace("’", "'")
+               cleaned_values[index] = cleaned_values[index].replace("“",'"')
+               cleaned_values[index] = cleaned_values[index].replace("”",'"')
+               cleaned_values[index] = cleaned_values[index].replace("…",'"')
+         guest_dict[cleaned_values[GUEST_USERNAME]]= {'First':cleaned_values[GUEST_FIRSTNAME], 'Last':cleaned_values[GUEST_LASTNAME], 
+            'PW':cleaned_values[GUEST_PASSWORD],'Town':cleaned_values[GUEST_TOWN], 'Phone':cleaned_values[GUEST_PHONE], 
+            'Notes':cleaned_values[GUEST_NOTES]}      
+         # guest_dict[row[GUEST_USERNAME].value]= {'First':row[GUEST_FIRSTNAME].value, 'Last':row[GUEST_LASTNAME].value, 
+         #    'PW':row[GUEST_PASSWORD].value,'Town':row[GUEST_TOWN].value, 'Phone':row[GUEST_PHONE].value, 
+         #    'Notes':row[GUEST_NOTES].value}      
    # print(f"{guest_dict=}")
    '''
    guest_dict={'Guest1': {'First': 'Guest', 'Last': 1.0, 'PW': 'secret', 'Town': 'Newbury', 'Phone': '978.555.0000', 'Notes': 'call early'}, 'Guest2': {'First': 'Guest', 'Last': 2.0, 'PW': 'secret', 'Town': 'Newbury', 'Phone': '978.555.0000', 'Notes': 'call 3 times'}, 'Guest3': {'First': 'Guest', 'Last': 3.0, 'PW': 'secret', 'Town': 'Newbury', 'Phone': '978.555.0000', 'Notes': 'call late'}}
@@ -112,6 +139,7 @@ def make_caller_pdfs(caller_mapping_dict, guest_dict, date_str, out_pdf_dir='.')
    success_list = []
    failure_list = []
    for caller, guests in caller_mapping_dict.items():
+      # print(f'{caller=} {guests=}')
       try:
          pdf = FPDF(orientation="L", format="letter") # default units are mm; adding , unit="in" inserts blank pages
          pdf.add_page()
@@ -127,13 +155,20 @@ def make_caller_pdfs(caller_mapping_dict, guest_dict, date_str, out_pdf_dir='.')
                row.cell(column)
 
             for guest_id_note in guests:
-               this_guest = guest_dict[guest_id_note[0]]
+               # print(f'{guest_id_note=}')
+               this_guest_username = guest_id_note[0]
+               if this_guest_username in guest_dict:
+                  this_guest_dict = guest_dict[this_guest_username]
+               else:
+                  print(f'{this_guest_username=} is not in guest_dict')
+                  sys.exit(1)
                this_weeks_guest_note = guest_id_note[1]
                if this_weeks_guest_note is None:
                   this_weeks_guest_note = ''
-               row_data = [this_guest['First'], this_guest['Last'], guest_id_note[0], \
-                           this_guest['PW'], this_guest['Town'], this_guest['Phone'], \
-                           this_weeks_guest_note, this_guest['Notes']]
+               row_data = [this_guest_dict['First'], this_guest_dict['Last'], guest_id_note[0], \
+                           this_guest_dict['PW'], this_guest_dict['Town'], this_guest_dict['Phone'], \
+                           this_weeks_guest_note, this_guest_dict['Notes']]
+               # print(f"{row_data=}")
                row = table.row()
                for item in row_data:
                   row.cell(str(item), v_align="T")
@@ -141,9 +176,27 @@ def make_caller_pdfs(caller_mapping_dict, guest_dict, date_str, out_pdf_dir='.')
          pdf.output(os.path.join(out_pdf_dir, f"{date_str}_{caller}.pdf"))
          success_list.append(caller)
       except Exception as e:
-         current_app.logger.warning(f"PDF for {caller} failed: {e}")
+         try:
+            current_app.logger.warning(f"PDF for {caller} failed: {e}")
+         except:
+            print(f"PDF for {caller} failed: {e}")
          failure_list.append(caller)
+         sys.exit(1)
    return (success_list, failure_list)
+
+
+def get_fridays_date_string():
+   import datetime
+   today = datetime.date.today()
+   # print(f"{today.weekday()=}")
+   # Sunday is 6, Monday is 0, Tuesday is 1, Wednesday is 2, Thursday is 3, Friday is 4, Saturday is 5
+   # find the next Friday
+   days_ahead = 4 - today.weekday()
+   if days_ahead <= 0: # Target day already happened this week
+      days_ahead += 7
+   # print(f"{days_ahead=}")
+   target_date = today + datetime.timedelta(days=days_ahead)
+   return target_date.strftime('%Y-%m-%d')
 
 
 if __name__ == "__main__":
