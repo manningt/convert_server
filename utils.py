@@ -4,20 +4,7 @@ calls functions to process the input excel file and generate a
 import os
 from flask import current_app
 import zipfile
-from caller_list_transform import make_guests_per_caller_lists, make_caller_pdfs, Caller_lists
-
-def get_fridays_date_string():
-   import datetime
-   today = datetime.date.today()
-   # print(f"{today.weekday()=}")
-   # Sunday is 6, Monday is 0, Tuesday is 1, Wednesday is 2, Thursday is 3, Friday is 4, Saturday is 5
-   # find the next Friday
-   days_ahead = 4 - today.weekday()
-   if days_ahead <= 0: # Target day already happened this week
-      days_ahead += 7
-   # print(f"{days_ahead=}")
-   target_date = today + datetime.timedelta(days=days_ahead)
-   return target_date.strftime('%Y-%m-%d')
+from caller_list_transform import make_guests_per_caller_lists, make_caller_pdfs, Caller_lists, get_fridays_date_string
 
 
 def run_script(input_file):
