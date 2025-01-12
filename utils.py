@@ -4,7 +4,7 @@ calls functions to process the input excel file and generate a
 import os
 from flask import current_app
 import zipfile
-from caller_list_transform import make_guests_per_caller_lists, make_caller_pdfs, Caller_lists, get_fridays_date_string
+from caller_list_transform import make_guests_per_caller_lists, make_caller_pdfs, Caller_lists, get_fridays_date_string, filter_callers
 
 
 def run_script(input_file):
@@ -27,7 +27,9 @@ def run_script(input_file):
             if item.endswith(".pdf") or item.endswith(".txt"):
                 os.remove(os.path.join(current_app.config['UPLOAD_FOLDER'], item))
     
-        success_list, failure_list = make_caller_pdfs(Caller_lists.caller_mapping_dict, Caller_lists.guest_dict, \
+        filtered_callers_dict = filter_callers(Caller_lists.caller_mapping_dict)
+
+        success_list, failure_list = make_caller_pdfs(filtered_callers_dict, Caller_lists.guest_dict, \
                         pantry_date_str, out_pdf_dir=current_app.config['UPLOAD_FOLDER'])
 
         if len(Caller_lists.no_guest_list) > 0:

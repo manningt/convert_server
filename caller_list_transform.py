@@ -135,6 +135,31 @@ def make_guests_per_caller_lists(in_filename):
    return Caller_lists
 
 
+def filter_callers(caller_mapping_dict):
+   filtered_dict = {}
+   # see if the 'Change' row has a value, or if the caller does not equal the normal_caller
+   callers_with_substitutes = []
+   for caller, guests in caller_mapping_dict.items():
+      changed = False
+      for caller_guest_dict in guests:
+         if caller_guest_dict['change'] is not None:
+            changed = True
+            # print(f"{caller}-{caller_guest_dict['guest']} {caller_guest_dict['change']=}")
+         if caller != caller_guest_dict['normal_caller']:
+            changed = True
+            callers_with_substitutes.append(caller_guest_dict['normal_caller'])
+            # print(f"{caller}-{caller_guest_dict['guest']} {caller_guest_dict['normal_caller']=}")
+      if changed:
+         filtered_dict[caller] = guests
+         # print(f"filtered_dict_length={len(filtered_dict)}")
+
+   # add callers_with_substitutes:
+   for caller in callers_with_substitutes:
+      filtered_dict[caller] = caller_mapping_dict[caller]
+      
+   return filtered_dict
+
+
 def make_caller_pdfs(caller_mapping_dict, guest_dict, date_str, out_pdf_dir='.'):
    # PDF writing examples:
    #  https://medium.com/@mahijain9211/creating-a-python-class-for-generating-pdf-tables-from-a-pandas-dataframe-using-fpdf2-c0eb4b88355c
@@ -187,7 +212,7 @@ def make_caller_pdfs(caller_mapping_dict, guest_dict, date_str, out_pdf_dir='.')
          except:
             print(f"PDF for {caller} failed: {e}")
          failure_list.append(caller)
-         sys.exit(1)  # stop on first failure
+         # sys.exit(1)  # stop on first failure
    return (success_list, failure_list)
 
 
@@ -226,5 +251,6 @@ if __name__ == "__main__":
    print(f"Callers with no guests: {Caller_lists.no_guest_list}")
 
    date_str = get_fridays_date_string()
-   make_caller_pdfs(Caller_lists.caller_mapping_dict, Caller_lists.guest_dict, date_str, out_pdf_dir="/tmp")
+   filtered_callers_dict = filter_callers(Caller_lists.caller_mapping_dict)
+   make_caller_pdfs(filtered_callers_dict, Caller_lists.guest_dict, date_str, out_pdf_dir="/tmp")
    
