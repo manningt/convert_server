@@ -30,6 +30,7 @@ class Caller_lists(NamedTuple):
     caller_mapping_dict: dict = {}
     no_guest_list: list = []
     guest_dict: dict = {}
+    invalid_usernames: list = []
 
 
 def make_guests_per_caller_lists(in_filename):
@@ -89,44 +90,47 @@ def make_guests_per_caller_lists(in_filename):
    '''
    mapping_dict={'Caroline': [['Guest1', 'new regular']], 'Tina': [], 'Peter': [], 'Rebecca': [['Guest2', 'Substitute this week only']], 'Maria': [], 'Barb': [], 'Lisa': [['Guest3', None]], 'Do-Not-Call': []}
    '''
-   callers_with_no_guests = []
+   callers_with_no_guest_list = []
    for caller, guests in mapping_dict.items():
       if len(guests) == 0:
-         callers_with_no_guests.append(caller)
-   # remove caller with no guests from mapping_dict
-   for caller in callers_with_no_guests:   
+         callers_with_no_guest_list.append(caller)
+    # remove caller with no guests from mapping_dict
+   for caller in callers_with_no_guest_list:   
          mapping_dict.pop(caller) 
 
    # make a dictionary of guest data to be used for generating reports.
    guest_dict = {}
    is_header = True
+   invalid_usernames = []
    for row in workbook[GUESTS_SHEET_NAME].rows:
       if is_header:
          is_header = False
+      elif row[GUEST_USERNAME].value is None and row[GUEST_LASTNAME].value is None:
+         continue #skip blank rows
       else:
          # remove characters above the font range, e.g. "’", "“"
          cleaned_values = [""] * (GUEST_NOTES+1)
          for index in [GUEST_USERNAME, GUEST_FIRSTNAME, GUEST_LASTNAME, GUEST_PASSWORD, GUEST_TOWN, GUEST_PHONE, GUEST_NOTES]:
-            # if row[index].value is not None and isinstance(row[index].value, str): # and not isinstance(row[index].value, float):
-            if row[index].value is not None and not isinstance(row[index].value, float):
+            if row[index].value is not None and isinstance(row[index].value, str):
                cleaned_values[index] = row[index].value.replace("’", "'")
                cleaned_values[index] = cleaned_values[index].replace("“",'"')
                cleaned_values[index] = cleaned_values[index].replace("”",'"')
                cleaned_values[index] = cleaned_values[index].replace("…",'"')
-         guest_dict[cleaned_values[GUEST_USERNAME]]= {'First':cleaned_values[GUEST_FIRSTNAME], 'Last':cleaned_values[GUEST_LASTNAME], 
+         if len(cleaned_values[GUEST_USERNAME]) < 3:
+            invalid_usernames.append(f"{cleaned_values[GUEST_FIRSTNAME]} {cleaned_values[GUEST_LASTNAME]}")
+         else:
+            guest_dict[cleaned_values[GUEST_USERNAME]]= {'First':cleaned_values[GUEST_FIRSTNAME], 'Last':cleaned_values[GUEST_LASTNAME], 
             'PW':cleaned_values[GUEST_PASSWORD],'Town':cleaned_values[GUEST_TOWN], 'Phone':cleaned_values[GUEST_PHONE], 
             'Notes':cleaned_values[GUEST_NOTES]}      
-         # guest_dict[row[GUEST_USERNAME].value]= {'First':row[GUEST_FIRSTNAME].value, 'Last':row[GUEST_LASTNAME].value, 
-         #    'PW':row[GUEST_PASSWORD].value,'Town':row[GUEST_TOWN].value, 'Phone':row[GUEST_PHONE].value, 
-         #    'Notes':row[GUEST_NOTES].value}      
    # print(f"{guest_dict=}")
    '''
    guest_dict={'Guest1': {'First': 'Guest', 'Last': 1.0, 'PW': 'secret', 'Town': 'Newbury', 'Phone': '978.555.0000', 'Notes': 'call early'}, 'Guest2': {'First': 'Guest', 'Last': 2.0, 'PW': 'secret', 'Town': 'Newbury', 'Phone': '978.555.0000', 'Notes': 'call 3 times'}, 'Guest3': {'First': 'Guest', 'Last': 3.0, 'PW': 'secret', 'Town': 'Newbury', 'Phone': '978.555.0000', 'Notes': 'call late'}}
    '''
    
-   Caller_lists.no_guest_list = callers_with_no_guests
    Caller_lists.caller_mapping_dict = mapping_dict
    Caller_lists.guest_dict = guest_dict
+   Caller_lists.no_guest_list = callers_with_no_guest_list
+   Caller_lists.invalid_usernames = invalid_usernames
    Caller_lists.success = True
 
    return Caller_lists
@@ -160,8 +164,8 @@ def make_caller_pdfs(caller_mapping_dict, guest_dict, date_str, out_pdf_dir='.')
                if this_guest_username in guest_dict:
                   this_guest_dict = guest_dict[this_guest_username]
                else:
-                  print(f'{this_guest_username=} is not in guest_dict')
-                  sys.exit(1)
+                  # print(f'{this_guest_username=} is not in guest_dict')
+                  continue
                this_weeks_guest_note = guest_id_note[1]
                if this_weeks_guest_note is None:
                   this_weeks_guest_note = ''
@@ -181,7 +185,7 @@ def make_caller_pdfs(caller_mapping_dict, guest_dict, date_str, out_pdf_dir='.')
          except:
             print(f"PDF for {caller} failed: {e}")
          failure_list.append(caller)
-         sys.exit(1)
+         # sys.exit(1)
    return (success_list, failure_list)
 
 
