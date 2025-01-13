@@ -10,13 +10,19 @@ from caller_list_transform import make_guests_per_caller_lists, make_caller_pdfs
 def run_script(input_file):
     # current_app.logger.info(f"input_file= {input_file}")
 
-    pantry_date_str = get_fridays_date_string()
-    Caller_lists = make_guests_per_caller_lists(input_file)
+    # extract day info from filename, e.g. Master List for calling Jan 17 Pantry Day.xlsx
+    PANTRY_DAY_STRING_START = "calling "
+    PANTRY_DAY_STRING_END = "Pantry Day"
+    pantry_day_index_start = input_file.find(PANTRY_DAY_STRING_START) + len(PANTRY_DAY_STRING_START)
+    pantry_day_index_end = input_file.find(PANTRY_DAY_STRING_END) - 1 # subtract the space 
+    pantry_date_str = input_file[pantry_day_index_start:pantry_day_index_end].replace(" ", "_") # get_fridays_date_string()
 
-    processing_report_filename = 'excel_processing_report.txt'
-    processing_report_filepath = os.path.join(current_app.config['UPLOAD_FOLDER'], f'{pantry_date_str}_{processing_report_filename}')
-    zip_filename = 'call_lists.zip'
-    zip_filepath = os.path.join(current_app.config['UPLOAD_FOLDER'], f'{pantry_date_str}_{zip_filename}')
+    processing_report_filename = f'excel_processing_report_{pantry_date_str}.txt'
+    processing_report_filepath = os.path.join(current_app.config['UPLOAD_FOLDER'], f'{processing_report_filename}')
+    zip_filename = f'call_lists_{pantry_date_str}.zip'
+    zip_filepath = os.path.join(current_app.config['UPLOAD_FOLDER'], zip_filename)
+
+    Caller_lists = make_guests_per_caller_lists(input_file)
     status_str = ''
     if not Caller_lists.success:
         current_app.logger.warning(f"Failure: {Caller_lists.message}")
