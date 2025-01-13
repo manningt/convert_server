@@ -173,7 +173,8 @@ def make_caller_pdfs(caller_mapping_dict, guest_dict, date_str, out_pdf_dir='.')
          pdf = FPDF(orientation="L", format="letter") # default units are mm; adding , unit="in" inserts blank pages
          pdf.add_page()
          pdf.set_font("Helvetica", size=14)
-         pdf.cell(0, 10, f"{caller} - Pantry Day: {date_str.replace("_"," ")}", align="C")
+         pantry_day = date_str.replace("_"," ")
+         pdf.cell(0, 10, f"{caller} - Pantry Day: {pantry_day}", align="C")
          pdf.ln(10)
 
          with pdf.table(col_widths=(11,13,14,13,13,14,14,30), line_height=6) as table:
