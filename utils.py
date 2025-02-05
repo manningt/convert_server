@@ -10,31 +10,37 @@ from caller_list_transform import make_guests_per_caller_lists, make_caller_pdfs
 def run_script(input_file):
     # current_app.logger.info(f"input_file= {input_file}")
 
-    # extract day info from filename, e.g. Master List for calling Jan 17 Pantry Day.xlsx
-    PANTRY_DAY_STRING_START = "Calling "
-    PANTRY_DAY_STRING_END = ".xlsx"
-    
     ERROR_REPORT_FILENAME = 'error_report.txt'
     error_report_filepath = os.path.join(current_app.config['UPLOAD_FOLDER'], f'{ERROR_REPORT_FILENAME}')
 
-    input_filename = os.path.basename(input_file)
+    # extract day info from filename, e.g. Master List for calling Jan 17 Pantry Day.xlsx
+    START = 0
+    END = 1
+    PANTRY_DAY_DELIMITERS = ["calling ", ".xlsx"]
+    pantry_day_index = [-1,-1]
+    
+    for index, element in enumerate(PANTRY_DAY_DELIMITERS):
+        pantry_day_index[index] = input_file.lower().find(element)
+        if pantry_day_index[index] == -1:
+            with open(error_report_filepath, 'w') as f:
+                f.write(f"Error: Could not find '{element}' in the filename: {os.path.basename(input_file)}")
+            return error_report_filepath
+    
+    pantry_day_index[START] += len(PANTRY_DAY_DELIMITERS[START])
+    pantry_date_str = input_file[pantry_day_index[START]:pantry_day_index[END]].replace(" ", "_") # get_fridays_date_string()
 
-    pantry_day_index_start = input_file.find(PANTRY_DAY_STRING_START)
-    if pantry_day_index_start == -1:
+    if False:
         with open(error_report_filepath, 'w') as f:
-            f.write(f"Error: Could not find '{PANTRY_DAY_STRING_START}' in the filename: {input_filename}")
+            f.write(f"OK: '{os.path.basename(input_file)}' passed checks; date_string= {pantry_date_str}")
         return error_report_filepath
-    else:
-        pantry_day_index_start += len(PANTRY_DAY_STRING_START)
-
-    pantry_day_index_end = input_file.find(PANTRY_DAY_STRING_END)
-    pantry_date_str = input_file[pantry_day_index_start:pantry_day_index_end].replace(" ", "_") # get_fridays_date_string()
 
     Caller_lists = make_guests_per_caller_lists(input_file)
     status_str = ''
     if not Caller_lists.success:
         current_app.logger.warning(f"Failure: {Caller_lists.message}")
-        status_str = f"Failure: {Caller_lists.message}"
+        with open(error_report_filepath, 'w') as f:
+            f.write(f"Failure: {Caller_lists.message}")
+        return error_report_filepath
     else:
         # remove any existing files in the upload folder
         for item in os.listdir(current_app.config['UPLOAD_FOLDER']):
