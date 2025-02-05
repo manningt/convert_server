@@ -13,14 +13,22 @@ def run_script(input_file):
     # extract day info from filename, e.g. Master List for calling Jan 17 Pantry Day.xlsx
     PANTRY_DAY_STRING_START = "Calling "
     PANTRY_DAY_STRING_END = ".xlsx"
-    pantry_day_index_start = input_file.find(PANTRY_DAY_STRING_START) + len(PANTRY_DAY_STRING_START)
+    
+    ERROR_REPORT_FILENAME = 'error_report.txt'
+    error_report_filepath = os.path.join(current_app.config['UPLOAD_FOLDER'], f'{ERROR_REPORT_FILENAME}')
+
+    input_filename = os.path.basename(input_file)
+
+    pantry_day_index_start = input_file.find(PANTRY_DAY_STRING_START)
+    if pantry_day_index_start == -1:
+        with open(error_report_filepath, 'w') as f:
+            f.write(f"Error: Could not find '{PANTRY_DAY_STRING_START}' in the filename: {input_filename}")
+        return error_report_filepath
+    else:
+        pantry_day_index_start += len(PANTRY_DAY_STRING_START)
+
     pantry_day_index_end = input_file.find(PANTRY_DAY_STRING_END)
     pantry_date_str = input_file[pantry_day_index_start:pantry_day_index_end].replace(" ", "_") # get_fridays_date_string()
-
-    processing_report_filename = f'excel_processing_report_{pantry_date_str}.txt'
-    processing_report_filepath = os.path.join(current_app.config['UPLOAD_FOLDER'], f'{processing_report_filename}')
-    zip_filename = f'call_lists_{pantry_date_str}.zip'
-    zip_filepath = os.path.join(current_app.config['UPLOAD_FOLDER'], zip_filename)
 
     Caller_lists = make_guests_per_caller_lists(input_file)
     status_str = ''
@@ -60,9 +68,13 @@ def run_script(input_file):
         if len(failure_list) > 0:
             status_str += "PDF generation failed for: " + ', '.join(failure_list)
 
+    processing_report_filename = f'excel_processing_report_{pantry_date_str}.txt'
+    processing_report_filepath = os.path.join(current_app.config['UPLOAD_FOLDER'], f'{processing_report_filename}')
     with open(processing_report_filepath, 'w') as f:
         f.write(status_str)
 
+    zip_filename = f'call_lists_{pantry_date_str}.zip'
+    zip_filepath = os.path.join(current_app.config['UPLOAD_FOLDER'], zip_filename)
     with zipfile.ZipFile(zip_filepath, 'w') as zipf:
         for item in os.listdir(current_app.config['UPLOAD_FOLDER']):
             if item.endswith(".pdf"):
