@@ -11,10 +11,10 @@ def run_script(input_file):
     # current_app.logger.info(f"input_file= {input_file}")
 
     # extract day info from filename, e.g. Master List for calling Jan 17 Pantry Day.xlsx
-    PANTRY_DAY_STRING_START = "calling "
-    PANTRY_DAY_STRING_END = "Pantry Day"
+    PANTRY_DAY_STRING_START = "Calling "
+    PANTRY_DAY_STRING_END = ".xlsx"
     pantry_day_index_start = input_file.find(PANTRY_DAY_STRING_START) + len(PANTRY_DAY_STRING_START)
-    pantry_day_index_end = input_file.find(PANTRY_DAY_STRING_END) - 1 # subtract the space 
+    pantry_day_index_end = input_file.find(PANTRY_DAY_STRING_END)
     pantry_date_str = input_file[pantry_day_index_start:pantry_day_index_end].replace(" ", "_") # get_fridays_date_string()
 
     processing_report_filename = f'excel_processing_report_{pantry_date_str}.txt'
@@ -33,15 +33,17 @@ def run_script(input_file):
             if item.endswith(".pdf") or item.endswith(".txt"):
                 os.remove(os.path.join(current_app.config['UPLOAD_FOLDER'], item))
     
-        filtered_callers_dict = filter_callers(Caller_lists.caller_mapping_dict)
-
-        success_list, failure_list = make_caller_pdfs(filtered_callers_dict, Caller_lists.guest_dict, \
+        # filtered_callers_dict = filter_callers(Caller_lists.caller_mapping_dict)
+        
+        # success_list, failure_list = make_caller_pdfs(filtered_callers_dict, Caller_lists.guest_dict, \
+        success_list, failure_list = make_caller_pdfs(Caller_lists.caller_mapping_dict, Caller_lists.guest_dict, \
                         pantry_date_str, out_pdf_dir=current_app.config['UPLOAD_FOLDER'])
 
-        if len(Caller_lists.no_guest_list) > 0:
-            status_str = "Callers with no guests: " + ', '.join(Caller_lists.no_guest_list) + "\n\n"
-        else:
-            status_str = "All callers have guests.\n"
+        # sequence item 4: expected str instance, NoneType found
+        # if len(Caller_lists.no_guest_list) > 0:
+        #     status_str = "Callers with no guests: " + ', '.join(Caller_lists.no_guest_list) + "\n\n"
+        # else:
+        #     status_str = "All callers have guests.\n"
         if "Do-Not-Call" in Caller_lists.caller_mapping_dict:
             # current_app.logger.info(f"Caller_lists.caller_mapping_dict['Do-Not-Call']= {Caller_lists.caller_mapping_dict['Do-Not-Call']}")
             # example:  Caller_lists.caller_mapping_dict['Do-Not-Call']= [['Guest6', None]]
