@@ -50,7 +50,7 @@ def make_guests_per_caller_lists(in_filename):
    try:
       workbook = load_workbook(in_filename, data_only=True)
    except Exception as e:
-      Caller_lists.message = f"Error when reading {in_filename}: {e}"
+      Caller_lists.message = f"Could not read file '{os.path.basename(in_filename)}': {e}"
       return Caller_lists
    
    sheetnames = workbook.sheetnames
@@ -58,10 +58,10 @@ def make_guests_per_caller_lists(in_filename):
 
    # check that expected sheets are in the excel spreadsheet (other sheets are ignored)
    EXPECTED_SHEETNAMES = {'guest-to-caller', 'callers', GUESTS_SHEET_NAME}
-   sheetnames_set = set(sheetnames)
-   if EXPECTED_SHEETNAMES != sheetnames_set.intersection(EXPECTED_SHEETNAMES):
-      Caller_lists.message = f"Error: expected '{EXPECTED_SHEETNAMES}' sheet names; found '{sheetnames_set}' in file '{in_filename}'"
-      return Caller_lists
+   for name in EXPECTED_SHEETNAMES:
+      if name not in sheetnames:
+         Caller_lists.message = f"Expected sheet '{name}' not found in file '{os.path.basename(in_filename)}'"
+         return Caller_lists
 
    #make dictionary of caller, [guests]
    mapping_dict = {}
