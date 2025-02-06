@@ -3,7 +3,7 @@ calls functions to process the input excel file and generate a
 '''
 import os
 from flask import current_app
-import zipfile
+import shutil
 from caller_list_transform import make_guests_per_caller_lists, make_caller_pdfs, Caller_lists, get_fridays_date_string, filter_callers
 
 
@@ -44,20 +44,36 @@ def run_script(input_file):
     else:
         # remove any existing files in the upload folder
         for item in os.listdir(current_app.config['UPLOAD_FOLDER']):
-            if item.endswith(".pdf") or item.endswith(".txt"):
+            if item.endswith(".pdf") or item.endswith(".txt") or item.endswith(".zip"):
                 os.remove(os.path.join(current_app.config['UPLOAD_FOLDER'], item))
-    
-        # filtered_callers_dict = filter_callers(Caller_lists.caller_mapping_dict)
-        
-        # success_list, failure_list = make_caller_pdfs(filtered_callers_dict, Caller_lists.guest_dict, \
-        success_list, failure_list = make_caller_pdfs(Caller_lists.caller_mapping_dict, Caller_lists.guest_dict, \
-                        pantry_date_str, out_pdf_dir=current_app.config['UPLOAD_FOLDER'])
 
-        # sequence item 4: expected str instance, NoneType found
-        # if len(Caller_lists.no_guest_list) > 0:
-        #     status_str = "Callers with no guests: " + ', '.join(Caller_lists.no_guest_list) + "\n\n"
-        # else:
-        #     status_str = "All callers have guests.\n"
+        # make a 2 level nested directory to be zipped, so that unzippiing will result in a directory
+        directory_name_L1 = f'zip_dir_{pantry_date_str}'
+        directory_path_L1 = os.path.join(current_app.config['UPLOAD_FOLDER'], directory_name_L1)
+        if not os.path.exists(directory_path_L1):
+            os.makedirs(directory_path_L1)
+        directory_name_L2 = f'caller_lists_{pantry_date_str}'
+        directory_path_L2 = os.path.join(directory_path_L1, directory_name_L2)
+        if not os.path.exists(directory_path_L2):
+            os.makedirs(directory_path_L2)
+        directory_name_PDFs = f'caller_PDFs_{pantry_date_str}'
+        directory_path_PDFs = os.path.join(directory_path_L2, directory_name_PDFs)
+        if not os.path.exists(directory_path_PDFs):
+            os.makedirs(directory_path_PDFs)
+        # UPLOAD_FOLDER/zip_dir_date/caller_lists_date/caller_PDFs_date
+     
+        # Currently generating PDFs for every caller, to keep it simpler
+        # filtered_callers_dict = filter_callers(Caller_lists.caller_mapping_dict)        
+        # success_list, failure_list = make_caller_pdfs(filtered_callers_dict, Caller_lists.guest_dict, \
+
+        success_list, failure_list = make_caller_pdfs(Caller_lists.caller_mapping_dict, Caller_lists.guest_dict, \
+                        pantry_date_str, out_pdf_dir=directory_path_PDFs)
+
+        if len(Caller_lists.no_guest_list) > 0:
+            status_str = "Callers with no guests: " + ', '.join(Caller_lists.no_guest_list) + "\n\n"
+        else:
+            status_str = "All callers have guests.\n"
+
         if "Do-Not-Call" in Caller_lists.caller_mapping_dict:
             # current_app.logger.info(f"Caller_lists.caller_mapping_dict['Do-Not-Call']= {Caller_lists.caller_mapping_dict['Do-Not-Call']}")
             # example:  Caller_lists.caller_mapping_dict['Do-Not-Call']= [['Guest6', None]]
@@ -75,17 +91,14 @@ def run_script(input_file):
             status_str += "PDF generation failed for: " + ', '.join(failure_list)
 
     processing_report_filename = f'excel_processing_report_{pantry_date_str}.txt'
-    processing_report_filepath = os.path.join(current_app.config['UPLOAD_FOLDER'], f'{processing_report_filename}')
+    processing_report_filepath = os.path.join(directory_path_L2, f'{processing_report_filename}')
     with open(processing_report_filepath, 'w') as f:
         f.write(status_str)
 
-    zip_filename = f'call_lists_{pantry_date_str}.zip'
-    zip_filepath = os.path.join(current_app.config['UPLOAD_FOLDER'], zip_filename)
-    with zipfile.ZipFile(zip_filepath, 'w') as zipf:
-        for item in os.listdir(current_app.config['UPLOAD_FOLDER']):
-            if item.endswith(".pdf"):
-                zipf.write(os.path.join(current_app.config['UPLOAD_FOLDER'], item), item)
-            if item.endswith(".txt"):
-                zipf.write(os.path.join(current_app.config['UPLOAD_FOLDER'], item), item)
+    zip_filename = f'call_lists_{pantry_date_str}'
+    # change working directory to have zip file in the UPLOAD_FOLDER
+    os.chdir(current_app.config['UPLOAD_FOLDER'])
+    zip_filepath = shutil.make_archive(zip_filename, 'zip', directory_path_L1)
 
+    current_app.logger.info(f"zip file created: '{zip_filepath}'") 
     return zip_filepath
