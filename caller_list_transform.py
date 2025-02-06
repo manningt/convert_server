@@ -70,32 +70,50 @@ def make_guests_per_caller_lists(in_filename):
       # skip header row; there is only 1 column: the list of callers
       if is_header:
          is_header = False
-      else:
+      elif row[0].value is not None:
          mapping_dict[row[0].value] = []
+      else:
+         continue
    
    is_header = True
+   row_number = 1
    for row in workbook['guest-to-caller'].rows:
-      # columns: 0=Guest, 1=Caller, 2=Change, 3=Note, 4=Normal Caller
+      # columns: 0=Guest, 1=Caller, 2=Note, 3=Normal Caller
       if is_header:
          is_header = False
-      elif row[1].value is not None:
-         # print(f'{row[0].value} -> {row[1].value}')
-         # a list containing the guest name and note to the caller's list:
-         caller_note = ""
-         if row[3].value is not None and isinstance(row[3].value, str):
-            caller_note = row[3].value.replace("’", "'")
-         mapping_dict[row[1].value].append({'guest':row[0].value, 'caller_note':caller_note, 'change':row[2].value, 'normal_caller':row[4].value})
-   # print(f"{mapping_dict=}\n")
+      elif row[0].value is not None:
+         if row[1].value is not None:
+            # print(f'{row[0].value} -> {row[1].value}')
+            # a list containing the guest name and note to the caller's list:
+            if row[2].value is not None and isinstance(row[2].value, str):
+               caller_note = row[2].value.replace("’", "'")
+            else:
+               caller_note = ""
+            mapping_dict[row[1].value].append({'guest':row[0].value, 'caller_note':caller_note, 'normal_caller':row[3].value})
+            # current_app.logger.info(f"{row_number=} appended: {row[0].value}")
+            # row_number += 1
+            # if 'Wanda' in mapping_dict:
+            #    current_app.logger.info(f"Wanda in mapping_dict")
+            # if None in mapping_dict:
+            #    current_app.logger.info(f"None in mapping_dict")
+         else:
+            current_app.logger.info(f"guest '{row[0].value}' does not have a caller")
+      else:
+         continue
+
+   # current_app.logger.info(f"{mapping_dict=}")
    '''
-   mapping_dict={'Caroline': [['Guest1', 'new regular']], 'Tina': [], 'Peter': [], 'Rebecca': [['Guest2', 'Substitute this week only']], 'Maria': [], 'Barb': [], 'Lisa': [['Guest3', None]], 'Do-Not-Call': []}
+   mapping_dict={'Barb': [{'guest': 'LAnderson1', 'caller_note': '', 'normal_caller': 'Barb'}, {'guest': 'DMcCarthy', 'caller_note': '', 'normal_caller': 'Barb'}
    '''
    callers_with_no_guest_list = []
    for caller, guests in mapping_dict.items():
       if len(guests) == 0:
          callers_with_no_guest_list.append(caller)
-    # remove caller with no guests from mapping_dict
+   # current_app.logger.info(f"{callers_with_no_guest_list= }") 
+
+   # remove caller with no guests from mapping_dict
    for caller in callers_with_no_guest_list:   
-         mapping_dict.pop(caller) 
+         mapping_dict.pop(caller)
 
    # make a dictionary of guest data to be used for generating reports.
    guest_dict = {}
@@ -115,6 +133,7 @@ def make_guests_per_caller_lists(in_filename):
                cleaned_values[index] = cleaned_values[index].replace("“",'"')
                cleaned_values[index] = cleaned_values[index].replace("”",'"')
                cleaned_values[index] = cleaned_values[index].replace("…",'"')
+               cleaned_values[index] = cleaned_values[index].replace("–", "-") # replace ndash (Character "\u2013")
          if len(cleaned_values[GUEST_USERNAME]) < 3:
             invalid_usernames.append(f"{cleaned_values[GUEST_FIRSTNAME]} {cleaned_values[GUEST_LASTNAME]}")
          else:
