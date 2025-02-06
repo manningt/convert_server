@@ -85,8 +85,10 @@ def run_script(input_file):
         #     status_str += "No guests on Do-Not-Call list.\n"
         if len(Caller_lists.invalid_usernames) > 0:
             status_str += "Guests with invalid usernames: " + ', '.join(Caller_lists.invalid_usernames) + "\n\n"
-        if len(success_list) > 0:
-            status_str += "PDFs generated for: " + ', '.join(success_list) + "\n\n"
+        if len(Caller_lists.guests_without_caller) > 0:
+            status_str += "These guests don't have a caller: " + ', '.join(Caller_lists.guests_without_caller) + "\n\n"        
+        # if len(success_list) > 0:
+        #     status_str += "PDFs generated for: " + ', '.join(success_list) + "\n\n"
         if len(failure_list) > 0:
             status_str += "PDF generation failed for: " + ', '.join(failure_list)
 

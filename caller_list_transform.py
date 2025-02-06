@@ -31,6 +31,7 @@ class Caller_lists(NamedTuple):
     no_guest_list: list = []
     guest_dict: dict = {}
     invalid_usernames: list = []
+    guests_without_caller: list = []
 
 
 def make_guests_per_caller_lists(in_filename):
@@ -75,8 +76,8 @@ def make_guests_per_caller_lists(in_filename):
       else:
          continue
    
+   guests_with_no_caller = []
    is_header = True
-   row_number = 1
    for row in workbook['guest-to-caller'].rows:
       # columns: 0=Guest, 1=Caller, 2=Note, 3=Normal Caller
       if is_header:
@@ -90,13 +91,8 @@ def make_guests_per_caller_lists(in_filename):
             else:
                caller_note = ""
             mapping_dict[row[1].value].append({'guest':row[0].value, 'caller_note':caller_note, 'normal_caller':row[3].value})
-            # current_app.logger.info(f"{row_number=} appended: {row[0].value}")
-            # row_number += 1
-            # if 'Wanda' in mapping_dict:
-            #    current_app.logger.info(f"Wanda in mapping_dict")
-            # if None in mapping_dict:
-            #    current_app.logger.info(f"None in mapping_dict")
          else:
+            guests_with_no_caller.append(row[0].value)
             current_app.logger.info(f"guest '{row[0].value}' does not have a caller")
       else:
          continue
@@ -149,6 +145,7 @@ def make_guests_per_caller_lists(in_filename):
    Caller_lists.guest_dict = guest_dict
    Caller_lists.no_guest_list = callers_with_no_guest_list
    Caller_lists.invalid_usernames = invalid_usernames
+   Caller_lists.guests_without_caller = guests_with_no_caller
    Caller_lists.success = True
 
    return Caller_lists
