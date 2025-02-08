@@ -33,6 +33,21 @@ class Caller_lists(NamedTuple):
     invalid_usernames: list = []
     guests_without_caller: list = []
 
+def remove_unicode(string):
+   try:
+      ascii_str = string.encode(encoding="ascii", errors="strict")
+      return string
+   except:
+      # convert some specific unicode to ascii, then replace rest with spaces
+      ascii_str = string.replace("’", "'") #right single quotation mark: \u2019	&rsquo; (I've)
+      ascii_str = ascii_str.replace("‘", "'")  #left single quotation mark: \u2018	&lsquo;
+      ascii_str = ascii_str.replace("“",'"') #left double quote \u201C
+      ascii_str = ascii_str.replace("”",'"') #right double quote \u201D
+      ascii_str = ascii_str.replace("…",'...') #horizontal ellipsis \u2026 &hellip;
+      ascii_str = ascii_str.replace("–", "-") # ndash: \u2013
+      ascii_byte_str = ascii_str.encode(encoding="ascii", errors="ignore")
+      return ascii_byte_str.decode("utf-8")
+
 
 def make_guests_per_caller_lists(in_filename):
    # returns the tuple Caller_lists
@@ -87,7 +102,7 @@ def make_guests_per_caller_lists(in_filename):
             # print(f'{row[0].value} -> {row[1].value}')
             # a list containing the guest name and note to the caller's list:
             if row[2].value is not None and isinstance(row[2].value, str):
-               caller_note = row[2].value.replace("’", "'")
+               caller_note = remove_unicode(row[2].value)
             else:
                caller_note = ""
             mapping_dict[row[1].value].append({'guest':row[0].value, 'caller_note':caller_note, 'normal_caller':row[3].value})
@@ -125,11 +140,7 @@ def make_guests_per_caller_lists(in_filename):
          cleaned_values = [""] * (GUEST_NOTES+1)
          for index in [GUEST_USERNAME, GUEST_FIRSTNAME, GUEST_LASTNAME, GUEST_PASSWORD, GUEST_TOWN, GUEST_PHONE, GUEST_NOTES]:
             if row[index].value is not None and isinstance(row[index].value, str):
-               cleaned_values[index] = row[index].value.replace("’", "'")
-               cleaned_values[index] = cleaned_values[index].replace("“",'"')
-               cleaned_values[index] = cleaned_values[index].replace("”",'"')
-               cleaned_values[index] = cleaned_values[index].replace("…",'"')
-               cleaned_values[index] = cleaned_values[index].replace("–", "-") # replace ndash (Character "\u2013")
+               cleaned_values[index] = remove_unicode(row[index].value)
          if len(cleaned_values[GUEST_USERNAME]) < 3:
             invalid_usernames.append(f"{cleaned_values[GUEST_FIRSTNAME]} {cleaned_values[GUEST_LASTNAME]}")
          else:
