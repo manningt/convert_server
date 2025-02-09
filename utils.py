@@ -10,6 +10,15 @@ from caller_list_transform import make_guests_per_caller_lists, make_caller_pdfs
 def run_script(input_file):
     # current_app.logger.info(f"input_file= {input_file}")
 
+    TEST_EXCEPTION = False
+    if TEST_EXCEPTION:
+        raise ValueError("Test")
+
+    os.chdir(current_app.config['UPLOAD_FOLDER'])
+    ZIP_DIR_PREFIX = "zip_dir_"
+    CALL_LISTS_DIR_PREFIX = "caller_lists_"
+    PDFS_DIR_PREFIX = "caller_PDFs_"
+
     ERROR_REPORT_FILENAME = 'error_report.txt'
     error_report_filepath = os.path.join(current_app.config['UPLOAD_FOLDER'], f'{ERROR_REPORT_FILENAME}')
 
@@ -43,23 +52,23 @@ def run_script(input_file):
         return error_report_filepath
     else:
         # remove any existing files in the upload folder
-        for item in os.listdir(current_app.config['UPLOAD_FOLDER']):
-            if item.endswith(".pdf") or item.endswith(".txt") or item.endswith(".zip"):
-                os.remove(os.path.join(current_app.config['UPLOAD_FOLDER'], item))
+        for item in os.listdir():
+            if item.startswith(CALL_LISTS_DIR_PREFIX):
+                os.remove(item)
+                current_app.logger.info(f"Deleted: {item}")
+            if item.startswith(ZIP_DIR_PREFIX):
+                shutil.rmtree(item)
+                current_app.logger.info(f"Deleted: {item}")
 
         # make a 2 level nested directory to be zipped, so that unzippiing will result in a directory
-        directory_name_L1 = f'zip_dir_{pantry_date_str}'
-        directory_path_L1 = os.path.join(current_app.config['UPLOAD_FOLDER'], directory_name_L1)
-        if not os.path.exists(directory_path_L1):
-            os.makedirs(directory_path_L1)
-        directory_name_L2 = f'caller_lists_{pantry_date_str}'
-        directory_path_L2 = os.path.join(directory_path_L1, directory_name_L2)
-        if not os.path.exists(directory_path_L2):
-            os.makedirs(directory_path_L2)
-        directory_name_PDFs = f'caller_PDFs_{pantry_date_str}'
+        directory_name_L1 = f'{ZIP_DIR_PREFIX}{pantry_date_str}'
+        os.makedirs(directory_name_L1)
+        directory_name_L2 = f'{CALL_LISTS_DIR_PREFIX}{pantry_date_str}'
+        directory_path_L2 = os.path.join(directory_name_L1, directory_name_L2)
+        os.makedirs(directory_path_L2)
+        directory_name_PDFs = f'{PDFS_DIR_PREFIX}{pantry_date_str}'
         directory_path_PDFs = os.path.join(directory_path_L2, directory_name_PDFs)
-        if not os.path.exists(directory_path_PDFs):
-            os.makedirs(directory_path_PDFs)
+        os.makedirs(directory_path_PDFs)
         # UPLOAD_FOLDER/zip_dir_date/caller_lists_date/caller_PDFs_date
      
         # Currently generating PDFs for every caller, to keep it simpler
@@ -99,8 +108,7 @@ def run_script(input_file):
 
     zip_filename = f'call_lists_{pantry_date_str}'
     # change working directory to have zip file in the UPLOAD_FOLDER
-    os.chdir(current_app.config['UPLOAD_FOLDER'])
-    zip_filepath = shutil.make_archive(zip_filename, 'zip', directory_path_L1)
+    zip_filepath = shutil.make_archive(zip_filename, 'zip', directory_name_L1)
 
     current_app.logger.info(f"zip file created: '{zip_filepath}'") 
     return zip_filepath
