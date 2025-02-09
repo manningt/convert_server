@@ -105,7 +105,11 @@ def make_guests_per_caller_lists(in_filename):
                caller_note = remove_unicode(row[2].value)
             else:
                caller_note = ""
-            mapping_dict[row[1].value].append({'guest':row[0].value, 'caller_note':caller_note, 'normal_caller':row[3].value})
+            key = row[1].value
+            if key in mapping_dict:
+               mapping_dict[key].append({'guest':row[0].value, 'caller_note':caller_note, 'normal_caller':row[3].value})
+            else:
+               mapping_dict[key] = [{'guest':row[0].value, 'caller_note':caller_note, 'normal_caller':row[3].value}]
          else:
             guests_with_no_caller.append(row[0].value)
             current_app.logger.info(f"guest '{row[0].value}' does not have a caller")
