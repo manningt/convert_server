@@ -236,7 +236,7 @@ def make_caller_pdfs(caller_mapping_dict, guest_dict, date_str, out_pdf_dir='.')
                for item in row_data:
                   row.cell(str(item), v_align="T")
 
-         pdf.output(os.path.join(out_pdf_dir, f"{caller}_{date_str}.pdf"))
+         pdf.output(os.path.join(out_pdf_dir, f'{caller.replace(" ","_")}_{date_str}.pdf'))
          success_list.append(caller)
       except Exception as e:
          try:
