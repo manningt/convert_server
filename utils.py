@@ -4,7 +4,7 @@ calls functions to process the input excel file and generate a
 import os
 from flask import current_app
 import shutil
-from caller_list_transform import make_guests_per_caller_lists, make_caller_pdfs, Caller_lists, get_fridays_date_string, filter_callers
+from caller_list_transform import make_guests_per_caller_lists, make_caller_pdfs, Caller_lists
 
 
 def run_script(input_file):
@@ -51,6 +51,9 @@ def run_script(input_file):
             f.write(f"Failure: {Caller_lists.message}")
         return error_report_filepath
     else:
+        if False:
+            print(f"{Caller_lists.caller_mapping_dict= }")
+            print(f"{Caller_lists.guest_dict=}")
         # remove any existing files in the upload folder
         for item in os.listdir():
             if item.startswith(CALL_LISTS_DIR_PREFIX):
@@ -78,26 +81,16 @@ def run_script(input_file):
         success_list, failure_list = make_caller_pdfs(Caller_lists.caller_mapping_dict, Caller_lists.guest_dict, \
                         pantry_date_str, out_pdf_dir=directory_path_PDFs)
 
-        if len(Caller_lists.no_guest_list) > 0:
-            status_str = "Callers with no guests: " + ', '.join(Caller_lists.no_guest_list) + "\n\n"
-        else:
-            status_str = "All callers have guests.\n"
-
-        if "Do-Not-Call" in Caller_lists.caller_mapping_dict:
-            # current_app.logger.info(f"Caller_lists.caller_mapping_dict['Do-Not-Call']= {Caller_lists.caller_mapping_dict['Do-Not-Call']}")
-            # example:  Caller_lists.caller_mapping_dict['Do-Not-Call']= [['Guest6', None]]
-            status_str += "Guests on the Do-Not-Call list: "
-            for guest in Caller_lists.caller_mapping_dict["Do-Not-Call"]:
-                status_str += f"{guest[0]} " # guest[0] is the guest UserName and guest[1] is the Caller's note
-            status_str += "\n\n"
-        # else:
-        #     status_str += "No guests on Do-Not-Call list.\n"
         if len(Caller_lists.invalid_usernames) > 0:
             status_str += "Guests with invalid usernames: " + ', '.join(Caller_lists.invalid_usernames) + "\n\n"
+        # if len(Caller_lists.invalid_caller_names) > 0:
+        #     status_str += "Callers with invalid names: " + ', '.join(Caller_lists.invalid_caller_names) + "\n\n"
+        if len(Caller_lists.no_guest_list) > 0:
+            status_str = "Callers with no guests: " + ', '.join(Caller_lists.no_guest_list) + "\n\n"
         if len(Caller_lists.guests_without_caller) > 0:
             status_str += "These guests don't have a caller: " + ', '.join(Caller_lists.guests_without_caller) + "\n\n"        
-        # if len(success_list) > 0:
-        #     status_str += "PDFs generated for: " + ', '.join(success_list) + "\n\n"
+        if len(success_list) > 0:
+            status_str += f"generated {len(success_list)} PDFs\n"
         if len(failure_list) > 0:
             status_str += "PDF generation failed for: " + ', '.join(failure_list)
 
