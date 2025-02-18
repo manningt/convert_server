@@ -83,8 +83,8 @@ def run_script(input_file):
 
         if len(Caller_lists.invalid_usernames) > 0:
             status_str += "Guests with invalid usernames: " + ', '.join(Caller_lists.invalid_usernames) + "\n\n"
-        # if len(Caller_lists.invalid_caller_names) > 0:
-        #     status_str += "Callers with invalid names: " + ', '.join(Caller_lists.invalid_caller_names) + "\n\n"
+        if len(Caller_lists.invalid_caller_names) > 0:
+            status_str += "Callers with invalid names: " + '; '.join(Caller_lists.invalid_caller_names) + "\n\n"
         if len(Caller_lists.no_guest_list) > 0:
             status_str = "Callers with no guests: " + ', '.join(Caller_lists.no_guest_list) + "\n\n"
         if len(Caller_lists.guests_without_caller) > 0:

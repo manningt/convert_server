@@ -110,7 +110,7 @@ def make_guests_per_caller_lists(in_filename):
                caller_note = "" 
          # print(f"{caller= } {caller_note=}")
          if len(caller) < 3:
-            invalid_caller_names.append(f"{caller} {cleaned_values[GUEST_FIRSTNAME]} {cleaned_values[GUEST_LASTNAME]}")
+            invalid_caller_names.append(f"{caller} (calling {cleaned_values[GUEST_FIRSTNAME]} {cleaned_values[GUEST_LASTNAME]})")
          elif len(cleaned_values[GUEST_USERNAME]) < 3:
             invalid_usernames.append(f"{cleaned_values[GUEST_FIRSTNAME]} {cleaned_values[GUEST_LASTNAME]}")
          else:
@@ -133,6 +133,7 @@ def make_guests_per_caller_lists(in_filename):
    Caller_lists.guest_dict = guest_dict
    Caller_lists.no_guest_list = callers_with_no_guest_list
    Caller_lists.invalid_usernames = invalid_usernames
+   Caller_lists.invalid_caller_names = invalid_caller_names
    Caller_lists.guests_without_caller = guests_with_no_caller
    Caller_lists.success = True
 
