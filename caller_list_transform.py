@@ -58,6 +58,10 @@ def make_guests_per_caller_lists(in_filename):
    GUEST_LASTNAME = 2
    GUEST_USERNAME = 3
    GUEST_PASSWORD = 4
+   # the following 3 columns are hidden in the spreadsheet, and are not used in the reports:
+   GUEST_HOUSEHOLD_ID = 5
+   GUEST_DROP_LOCATION = 6
+   GUEST_ADDRESS = 7
    GUEST_TOWN = 8
    GUEST_PHONE = 9
    GUEST_NOTES = 10
@@ -87,20 +91,20 @@ def make_guests_per_caller_lists(in_filename):
    # make a dictionary of guest data to be used for generating reports.
    mapping_dict = {}
    guest_dict = {}
-   is_header = True
    invalid_usernames = []
    invalid_caller_names = []
-   for row in workbook[GUESTS_SHEET_NAME].rows:
-      if is_header:
-         is_header = False
-      elif row[GUEST_USERNAME].value is None and row[GUEST_LASTNAME].value is None:
+   # min_row=2 to skip header row
+   for row in workbook[GUESTS_SHEET_NAME].iter_rows(min_row=2, max_row=300, \
+                                                   min_col=1, max_col=(GUEST_NOTES+1), values_only=True):
+
+      if row[GUEST_USERNAME] is None and row[GUEST_LASTNAME] is None:
          continue #skip blank rows
       else:
          # remove characters above the font range, e.g. "’", "“"
          cleaned_values = [""] * (GUEST_NOTES+1)
          for index in [GUEST_CALLER, GUEST_USERNAME, GUEST_FIRSTNAME, GUEST_LASTNAME, GUEST_PASSWORD, GUEST_TOWN, GUEST_PHONE, GUEST_NOTES]:
-            if row[index].value is not None and isinstance(row[index].value, str):
-               cleaned_values[index] = remove_unicode(row[index].value)
+            if row[index] is not None and isinstance(row[index], str):
+               cleaned_values[index] = remove_unicode(row[index])
          # separate caller from the caller notes:
          if cleaned_values[GUEST_CALLER] is not None:
             if cleaned_values[GUEST_CALLER].find(" ") > 0:
@@ -254,9 +258,10 @@ if __name__ == "__main__":
    print(f"Callers with no guests: {Caller_lists.no_guest_list}")
 
    date_str = get_fridays_date_string()
-   filtered_callers_dict = filter_callers(Caller_lists.caller_mapping_dict)
-   make_caller_pdfs(filtered_callers_dict, Caller_lists.guest_dict, date_str, out_pdf_dir="/tmp")
-
+   # filter callers are callers with substitutes
+   # filtered_callers_dict = filter_callers(Caller_lists.caller_mapping_dict)
+   # make_caller_pdfs(filtered_callers_dict, Caller_lists.guest_dict, date_str, out_pdf_dir="/tmp")
+   make_caller_pdfs(Caller_lists.caller_mapping_dict, Caller_lists.guest_dict, date_str, out_pdf_dir="/tmp")
 
    
 def make_guests_per_caller_lists_w_mapping(in_filename):
