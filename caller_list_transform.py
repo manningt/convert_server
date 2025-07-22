@@ -58,13 +58,13 @@ def make_guests_per_caller_lists(in_filename):
    GUEST_LASTNAME = 2
    GUEST_USERNAME = 3
    GUEST_PASSWORD = 4
-   # the following 3 columns are hidden in the spreadsheet, and are not used in the reports:
-   GUEST_HOUSEHOLD_ID = 5
-   GUEST_DROP_LOCATION = 6
-   GUEST_ADDRESS = 7
-   GUEST_TOWN = 8
-   GUEST_PHONE = 9
-   GUEST_NOTES = 10
+   # the following 3 columns were hidden previously to 2025-07-24, and are not used in the reports:
+   # GUEST_HOUSEHOLD_ID = 5
+   # GUEST_DROP_LOCATION = 6
+   # GUEST_ADDRESS = 7
+   GUEST_TOWN = GUEST_PASSWORD +1
+   GUEST_PHONE = GUEST_TOWN + 1
+   GUEST_NOTES = GUEST_PHONE + 1
 
    Caller_lists()
    Caller_lists.success = False # default value didn't seem to work
@@ -263,7 +263,10 @@ if __name__ == "__main__":
    # make_caller_pdfs(filtered_callers_dict, Caller_lists.guest_dict, date_str, out_pdf_dir="/tmp")
    make_caller_pdfs(Caller_lists.caller_mapping_dict, Caller_lists.guest_dict, date_str, out_pdf_dir="/tmp")
 
-   
+'''
+The following function is not used in the current code, but is kept here for reference.
+It was used to make a mapping of guests to callers using a sheet named guest-to-caller, and to return a dictionary of guests
+
 def make_guests_per_caller_lists_w_mapping(in_filename):
    # returns the tuple Caller_lists
    GUESTS_SHEET_NAME = 'Master List'
@@ -271,9 +274,10 @@ def make_guests_per_caller_lists_w_mapping(in_filename):
    GUEST_LASTNAME = 2
    GUEST_USERNAME = 3
    GUEST_PASSWORD = 4
-   GUEST_TOWN = 8
-   GUEST_PHONE = 9
-   GUEST_NOTES = 10
+   # in old versions of the sheet before 2025-07-24, there were 3 hidden columns (5,6,7) that are not used in the PDFs
+   GUEST_TOWN = GUEST_PASSWORD + 1
+   GUEST_PHONE = GUEST_TOWN + 1
+   GUEST_NOTES = GUEST_PHONE + 1
 
    Caller_lists()
    Caller_lists.success = False # default value didn't seem to work
@@ -332,9 +336,8 @@ def make_guests_per_caller_lists_w_mapping(in_filename):
          continue
 
    # current_app.logger.info(f"{mapping_dict=}")
-   '''
-   mapping_dict={'Barb': [{'guest': 'LAnderson1', 'caller_note': '', 'normal_caller': 'Barb'}, {'guest': 'DMcCarthy', 'caller_note': '', 'normal_caller': 'Barb'}
-   '''
+   # mapping_dict={'Barb': [{'guest': 'LAnderson1', 'caller_note': '', 'normal_caller': 'Barb'}, {'guest': 'DMcCarthy', 'caller_note': '', 'normal_caller': 'Barb'}
+
    callers_with_no_guest_list = []
    for caller, guests in mapping_dict.items():
       if len(guests) == 0:
@@ -367,9 +370,7 @@ def make_guests_per_caller_lists_w_mapping(in_filename):
             'PW':cleaned_values[GUEST_PASSWORD],'Town':cleaned_values[GUEST_TOWN], 'Phone':cleaned_values[GUEST_PHONE], 
             'Notes':cleaned_values[GUEST_NOTES]}      
    # print(f"{guest_dict=}")
-   '''
-   guest_dict={'Guest1': {'First': 'Guest', 'Last': 1.0, 'PW': 'secret', 'Town': 'Newbury', 'Phone': '978.555.0000', 'Notes': 'call early'}, 'Guest2': {'First': 'Guest', 'Last': 2.0, 'PW': 'secret', 'Town': 'Newbury', 'Phone': '978.555.0000', 'Notes': 'call 3 times'}, 'Guest3': {'First': 'Guest', 'Last': 3.0, 'PW': 'secret', 'Town': 'Newbury', 'Phone': '978.555.0000', 'Notes': 'call late'}}
-   '''
+   # guest_dict={'Guest1': {'First': 'Guest', 'Last': 1.0, 'PW': 'secret', 'Town': 'Newbury', 'Phone': '978.555.0000', 'Notes': 'call early'}, 'Guest2': {'First': 'Guest', 'Last': 2.0, 'PW': 'secret', 'Town': 'Newbury', 'Phone': '978.555.0000', 'Notes': 'call 3 times'}, 'Guest3': {'First': 'Guest', 'Last': 3.0, 'PW': 'secret', 'Town': 'Newbury', 'Phone': '978.555.0000', 'Notes': 'call late'}}
    
    Caller_lists.caller_mapping_dict = mapping_dict
    Caller_lists.guest_dict = guest_dict
@@ -379,3 +380,4 @@ def make_guests_per_caller_lists_w_mapping(in_filename):
    Caller_lists.success = True
 
    return Caller_lists
+'''
